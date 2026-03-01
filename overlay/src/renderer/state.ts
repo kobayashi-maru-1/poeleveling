@@ -24,6 +24,7 @@ export interface AppState {
   showSettings: boolean;
   showGems: boolean;
   collapsed: boolean;
+  lastZone: string;
 }
 
 export type Action =
@@ -82,6 +83,7 @@ export const initialState: AppState = {
   showSettings: false,
   showGems: false,
   collapsed: false,
+  lastZone: "",
 };
 
 function clamp(value: number, min: number, max: number): number {
@@ -158,18 +160,18 @@ export function reducer(state: AppState, action: Action): AppState {
 
     case "ZONE_ENTERED": {
       const zoneLower = action.zoneName.toLowerCase();
-      const areaId = areaNameMap.get(zoneLower);
-      if (!areaId) return state;
+      const areaIds = areaNameMap.get(zoneLower);
+      if (!areaIds) return { ...state, lastZone: action.zoneName };
 
       const start = state.currentIndex;
       for (let i = start + 1; i < state.flatSteps.length; i++) {
         const flat = state.flatSteps[i];
-        if (flat.step.enterAreaId === areaId) {
+        if (flat.step.enterAreaId && areaIds.includes(flat.step.enterAreaId)) {
           localStorage.setItem(STORAGE_KEY_INDEX, String(i));
-          return { ...state, currentIndex: i };
+          return { ...state, currentIndex: i, lastZone: action.zoneName };
         }
       }
-      return state;
+      return { ...state, lastZone: action.zoneName };
     }
 
     default:

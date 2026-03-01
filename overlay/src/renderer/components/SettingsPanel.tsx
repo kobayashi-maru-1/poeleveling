@@ -148,6 +148,13 @@ export function SettingsPanel() {
             Browse
           </button>
         </div>
+        <span style={{ fontSize: 10, color: "var(--text-dim)" }}>
+          {local.clientTxtPath
+            ? (state.lastZone
+                ? `Last zone: ${state.lastZone}`
+                : "Watching — enter a zone to test")
+            : "No path set"}
+        </span>
       </div>
 
       {/* ── Character class ── */}

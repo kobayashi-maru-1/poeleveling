@@ -407,12 +407,19 @@ export function getGemsForClass(characterClass: string): GemEntry[] {
   return gems;
 }
 
-// Build a map from area name (as it appears in client.txt) → area ID
-export function buildAreaNameMap(): Map<string, string> {
-  const map = new Map<string, string>();
+// Build a map from area name (as it appears in client.txt) → all matching area IDs
+// Multiple areas can share the same display name (e.g. "The Sarn Encampment" in Act 3 and Act 8)
+export function buildAreaNameMap(): Map<string, string[]> {
+  const map = new Map<string, string[]>();
+  function add(name: string, id: string) {
+    const key = name.toLowerCase();
+    const existing = map.get(key);
+    if (existing) existing.push(id);
+    else map.set(key, [id]);
+  }
   for (const area of Object.values(Areas)) {
-    map.set(area.name.toLowerCase(), area.id);
-    if (area.map_name) map.set(area.map_name.toLowerCase(), area.id);
+    add(area.name, area.id);
+    if (area.map_name && area.map_name !== area.name) add(area.map_name, area.id);
   }
   return map;
 }

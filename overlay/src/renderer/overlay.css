@@ -63,8 +63,21 @@ body {
   flex-shrink: 0;
 }
 
-.header-title {
+.act-dropdown-wrap {
   flex: 1;
+  -webkit-app-region: no-drag;
+  min-width: 0;
+  position: relative;
+}
+
+.header-title {
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
   font-weight: 600;
   color: var(--accent);
@@ -72,6 +85,54 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  padding: 0;
+  text-align: left;
+}
+
+.header-title:hover {
+  color: #d4a820;
+}
+
+.act-chevron {
+  font-size: 9px;
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.act-dropdown {
+  position: fixed;
+  top: 34px;
+  left: 0;
+  right: 0;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.act-dropdown-item {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  text-align: left;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font);
+  transition: background 0.1s, color 0.1s;
+}
+
+.act-dropdown-item:hover {
+  background: var(--btn-hover);
+  color: var(--text);
+}
+
+.act-dropdown-item.active {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .header-btn {

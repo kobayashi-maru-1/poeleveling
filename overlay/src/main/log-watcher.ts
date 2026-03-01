@@ -28,11 +28,13 @@ export class LogWatcher {
 
     this.watcher = chokidar.watch(this.filePath, {
       persistent: true,
-      usePolling: false,
+      usePolling: true,
+      interval: 500,
       awaitWriteFinish: false,
     });
 
     this.watcher.on("change", () => this.readNewLines());
+    this.watcher.on("add", () => this.readNewLines());
     this.watcher.on("error", (err) => {
       console.error("LogWatcher error:", err);
     });
