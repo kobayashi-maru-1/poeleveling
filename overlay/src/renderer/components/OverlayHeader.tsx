@@ -64,6 +64,9 @@ export function OverlayHeader() {
         )}
       </div>
 
+      {/* Draggable spacer fills the remaining header width */}
+      <div style={{ flex: 1 }} />
+
       {/* Gem toggle */}
       <button
         className={`header-btn${state.showGems ? " active" : ""}`}

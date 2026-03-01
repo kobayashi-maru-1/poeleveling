@@ -64,14 +64,13 @@ body {
 }
 
 .act-dropdown-wrap {
-  flex: 1;
+  flex: 0 0 auto;
   -webkit-app-region: no-drag;
-  min-width: 0;
   position: relative;
+  max-width: 60%;
 }
 
 .header-title {
-  width: 100%;
   background: none;
   border: none;
   cursor: pointer;
