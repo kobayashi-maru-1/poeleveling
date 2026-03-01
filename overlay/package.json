@@ -28,6 +28,8 @@
     "typescript": "^5.4.0"
   },
   "build": {
+    "electronVersion": "33.4.11",
+    "electronLanguages": ["en-US"],
     "appId": "com.poeleveling.overlay",
     "productName": "PoE Leveling Overlay",
     "copyright": "Copyright © 2024",
@@ -42,7 +44,8 @@
         "from": "../common/data",
         "to": "common-data",
         "filter": [
-          "**/*"
+          "json/**/*",
+          "routes/**/*"
         ]
       }
     ],
@@ -50,6 +53,12 @@
       "target": [
         {
           "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
           "arch": [
             "x64"
           ]
