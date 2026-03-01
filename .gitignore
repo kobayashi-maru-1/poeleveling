@@ -23,5 +23,18 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment / secrets — never commit these
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets.*
+config.local.*
+
+# Build outputs
 /common/data/tree/*.json
+/overlay/out/
+/overlay/dist-installer/

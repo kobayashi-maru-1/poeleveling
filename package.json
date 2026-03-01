@@ -2,7 +2,8 @@
   "name": "exile-leveling",
   "workspaces": [
     "seeding",
-    "web"
+    "web",
+    "overlay"
   ],
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",

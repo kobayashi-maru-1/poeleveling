@@ -1,0 +1,487 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: rgba(18, 18, 20, 0.93);
+  --bg-header: rgba(30, 30, 35, 0.97);
+  --bg-step-current: rgba(180, 130, 50, 0.22);
+  --bg-step-context: rgba(255, 255, 255, 0.03);
+  --border: rgba(255, 255, 255, 0.1);
+  --text: #e8e8e8;
+  --text-dim: #888;
+  --text-section: #b8960a;
+  --accent: #c89a20;
+  --btn-hover: rgba(255, 255, 255, 0.1);
+  --radius: 6px;
+  --font: "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Consolas", monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  background: transparent;
+  user-select: none;
+}
+
+body {
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--text);
+  overflow: hidden;
+}
+
+/* ── Overlay shell ──────────────────────────────────────── */
+.overlay {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.overlay.collapsed {
+  height: auto;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  -webkit-app-region: drag;
+  cursor: move;
+  flex-shrink: 0;
+}
+
+.header-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-btn {
+  -webkit-app-region: no-drag;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-size: 14px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+}
+
+.header-btn:hover {
+  color: var(--text);
+  background: var(--btn-hover);
+}
+
+.header-btn.active {
+  color: var(--accent);
+}
+
+.header-btn.close:hover {
+  color: #e05555;
+  background: rgba(200, 60, 60, 0.2);
+}
+
+/* ── Progress bar ────────────────────────────────────────── */
+.progress-bar {
+  height: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.2s ease;
+}
+
+/* ── Step display ────────────────────────────────────────── */
+.steps-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.15) transparent;
+}
+
+.steps-container::-webkit-scrollbar {
+  width: 4px;
+}
+
+.steps-container::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+}
+
+.section-label {
+  padding: 4px 10px 2px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-section);
+}
+
+.step-row {
+  padding: 4px 10px;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: background 0.1s;
+  line-height: 1.4;
+}
+
+.step-row:hover {
+  background: var(--bg-step-context);
+}
+
+.step-row.current {
+  background: var(--bg-step-current);
+  border-left-color: var(--accent);
+}
+
+.step-row.past {
+  opacity: 0.4;
+}
+
+.step-row.future {
+  opacity: 0.75;
+}
+
+.step-text {
+  word-break: break-word;
+}
+
+.step-substeps {
+  margin-top: 2px;
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+
+.sub-text {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 1px 0;
+}
+
+/* ── Navigation footer ───────────────────────────────────── */
+.nav-footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-header);
+  flex-shrink: 0;
+}
+
+.nav-btn {
+  flex: 1;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 5px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.1s;
+}
+
+.nav-btn:hover {
+  background: rgba(255,255,255,0.12);
+}
+
+.nav-btn:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.step-counter {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  text-align: center;
+  min-width: 60px;
+}
+
+/* ── Gem panel ───────────────────────────────────────────── */
+.gem-panel {
+  border-top: 1px solid var(--border);
+  background: rgba(0,0,0,0.2);
+  max-height: 180px;
+  overflow-y: auto;
+  flex-shrink: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+.gem-panel-header {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  gap: 6px;
+}
+
+.gem-panel-header:hover {
+  color: var(--text);
+}
+
+.gem-list {
+  padding: 4px 0;
+}
+
+.gem-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.gem-row:hover {
+  background: var(--bg-step-context);
+}
+
+.gem-row.collected {
+  opacity: 0.35;
+}
+
+.gem-checkbox {
+  width: 13px;
+  height: 13px;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 10px;
+}
+
+.gem-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gem-name {
+  flex: 1;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gem-meta {
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+/* ── Settings panel ──────────────────────────────────────── */
+.settings-panel {
+  border-top: 1px solid var(--border);
+  background: rgba(0,0,0,0.25);
+  padding: 10px;
+  overflow-y: auto;
+  max-height: 300px;
+  flex-shrink: 0;
+}
+
+.settings-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.settings-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+.settings-input {
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 7px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: var(--font);
+  outline: none;
+  width: 100%;
+}
+
+.settings-input:focus {
+  border-color: var(--accent);
+}
+
+/* Force dark theme on <select> — browsers ignore background/color otherwise */
+select.settings-input {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: #1e1e26;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23888' d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  padding-right: 24px;
+  cursor: pointer;
+}
+
+select.settings-input option {
+  background: #1e1e26;
+  color: #e8e8e8;
+}
+
+.settings-row-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.settings-checkbox {
+  cursor: pointer;
+  accent-color: var(--accent);
+}
+
+.settings-file-row {
+  display: flex;
+  gap: 6px;
+}
+
+.settings-file-row .settings-input {
+  flex: 1;
+  font-size: 11px;
+}
+
+.settings-btn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+
+.settings-btn:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+.settings-apply-btn {
+  background: var(--accent);
+  color: #1a1400;
+  border: none;
+  font-weight: 600;
+}
+
+.settings-reset-btn {
+  background: rgba(180, 50, 50, 0.2);
+  border-color: rgba(180, 50, 50, 0.4);
+  color: #e08080;
+}
+
+.settings-reset-btn:hover {
+  background: rgba(180, 50, 50, 0.35);
+  border-color: rgba(180, 50, 50, 0.6);
+  color: #f0a0a0;
+}
+
+.settings-apply-btn:hover {
+  background: #d4a820;
+  color: #1a1400;
+}
+
+/* ── Inline gem badges (inside step rows) ────────────────── */
+.gem-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 3px;
+}
+
+.gem-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px 2px 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+  font-size: 11px;
+  user-select: none;
+}
+
+.gem-badge:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.gem-badge.collected {
+  opacity: 0.35;
+}
+
+.gem-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gem-badge-name {
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.gem-badge-type {
+  font-size: 10px;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.gem-badge-check {
+  font-size: 10px;
+  color: #7cbf7c;
+}
+
+/* ── Loading/empty states ─────────────────────────────────── */
+.loading-msg {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-dim);
+  font-size: 12px;
+}
