@@ -76,6 +76,26 @@ export function OverlayHeader() {
         💎
       </button>
 
+      {/* Gem links toggle */}
+      <button
+        className={`header-btn${state.showLinks ? " active" : ""}`}
+        title={state.gemLinkSets?.length ? "Toggle gem links" : "Import a PoB code to see gem links"}
+        onClick={() => { if (state.gemLinkSets?.length) dispatch({ type: "TOGGLE_LINKS" }); }}
+        style={{ opacity: state.gemLinkSets?.length ? undefined : 0.35 }}
+      >
+        🔗
+      </button>
+
+      {/* Passive tree toggle */}
+      <button
+        className={`header-btn${state.showTree ? " active" : ""}`}
+        title={state.buildTrees?.length ? "Toggle passive tree" : "Import a PoB code to enable tree"}
+        onClick={() => { if (state.buildTrees?.length) dispatch({ type: "TOGGLE_TREE" }); }}
+        style={{ opacity: state.buildTrees?.length ? undefined : 0.35 }}
+      >
+        🕸
+      </button>
+
       {/* Settings toggle */}
       <button
         className={`header-btn${state.showSettings ? " active" : ""}`}

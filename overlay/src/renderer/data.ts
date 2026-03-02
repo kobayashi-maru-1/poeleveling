@@ -407,6 +407,44 @@ export function getGemsForClass(characterClass: string): GemEntry[] {
   return gems;
 }
 
+// ─── Gem acquisition sources ──────────────────────────────────────────────────
+
+export interface GemSource {
+  questName: string;
+  act: number;
+  npc: string | undefined;
+  rewardType: "quest" | "vendor";
+}
+
+/** Returns all quests/vendor offers where gemId can be obtained (any class). */
+export function getGemSources(gemId: string): GemSource[] {
+  const sources: GemSource[] = [];
+  const seen = new Set<string>();
+
+  for (const quest of Object.values(Quests)) {
+    const act = parseInt(quest.act, 10);
+    for (const offer of Object.values(quest.reward_offers)) {
+      if (offer.quest && gemId in offer.quest) {
+        const key = `${quest.id}:quest`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          sources.push({ questName: quest.name, act, npc: offer.quest_npc, rewardType: "quest" });
+        }
+      }
+      if (offer.vendor && gemId in offer.vendor) {
+        const key = `${quest.id}:vendor`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          sources.push({ questName: quest.name, act, npc: offer.vendor[gemId].npc, rewardType: "vendor" });
+        }
+      }
+    }
+  }
+
+  sources.sort((a, b) => a.act - b.act);
+  return sources;
+}
+
 // Build a map from area name (as it appears in client.txt) → all matching area IDs
 // Multiple areas can share the same display name (e.g. "The Sarn Encampment" in Act 3 and Act 8)
 export function buildAreaNameMap(): Map<string, string[]> {

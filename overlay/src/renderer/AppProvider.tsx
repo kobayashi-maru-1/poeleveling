@@ -33,13 +33,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (settings.pobCode) {
           const result = parsePobCode(settings.pobCode);
           if (!("error" in result)) {
-            dispatch({ type: "SET_POB", pobGemIds: new Set(result.gemIds) });
+            dispatch({ type: "SET_POB", pobGemIds: new Set(result.gemIds), buildTrees: result.buildTrees, gemLinkSets: result.gemLinkSets });
           }
-        }
-
-        // Start log watcher if path is set
-        if (settings.clientTxtPath) {
-          window.electronAPI.startWatcher(settings.clientTxtPath);
         }
       } catch (err) {
         console.error("init failed:", err);
@@ -49,14 +44,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     init();
     return () => { cancelled = true; };
-  }, []);
-
-  // Subscribe to zone-entered events from main process
-  useEffect(() => {
-    const unsub = window.electronAPI.onZoneEntered((zoneName) => {
-      dispatch({ type: "ZONE_ENTERED", zoneName });
-    });
-    return unsub;
   }, []);
 
   return (

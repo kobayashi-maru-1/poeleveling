@@ -1,5 +1,6 @@
 import pako from "pako";
 import { Gems, VaalGemLookup, AwakenedGemLookup } from "./data";
+import type { RouteData } from "../../../common/route-processing/types";
 
 // PoB stores some gem IDs differently from the game data — remap them
 const GEM_ID_REMAP: Record<string, string> = {
@@ -40,11 +41,24 @@ function cleanText(s: string) {
   return s.replace(POB_COLOUR_REGEX, "");
 }
 
+export interface GemLinkGroup {
+  title: string;
+  primaryGems: string[];  // active skill gem IDs
+  supportGems: string[];  // support gem IDs
+}
+
+export interface GemLinkSet {
+  title: string;          // SkillSet title (e.g. "Default", "League Start")
+  groups: GemLinkGroup[]; // link groups within this loadout
+}
+
 export interface PobResult {
   characterClass: string;
   bandit: "None" | "Oak" | "Kraityn" | "Alira";
-  gemIds: string[];      // deduplicated, normalized gem IDs needed by the build
-  gemNames: string[];    // display names parallel to gemIds (for UI)
+  gemIds: string[];         // deduplicated, normalized gem IDs needed by the build
+  gemNames: string[];       // display names parallel to gemIds (for UI)
+  buildTrees: RouteData.BuildTree[];
+  gemLinkSets: GemLinkSet[];
   error?: never;
 }
 
@@ -72,29 +86,73 @@ export function parsePobCode(pobCode: string): PobResult | PobError {
     ? rawBandit
     : "None") as PobResult["bandit"];
 
-  // Collect gem IDs from all enabled Skill elements
   const gemIds: string[] = [];
-  const skillElements = Array.from(doc.getElementsByTagName("Skill"));
 
-  for (const skill of skillElements) {
-    if (skill.getAttribute("enabled") === "false") continue;
-    for (const gem of Array.from(skill.getElementsByTagName("Gem"))) {
-      const rawId = gem.getAttribute("gemId");
-      if (!rawId) continue;
-      const id = normalizeGemId(rawId);
-      if (!gemIds.includes(id) && Gems[id]) {
-        gemIds.push(id);
+  function processSkillContainer(container: Element): GemLinkGroup[] {
+    const groups: GemLinkGroup[] = [];
+    let recentEmptyLabel: string | undefined;
+    const skills = Array.from(container.getElementsByTagName("Skill"));
+    for (const skill of skills) {
+      if (skill.getAttribute("enabled") === "false") continue;
+      const label = skill.getAttribute("label") ?? undefined;
+      const gems = Array.from(skill.getElementsByTagName("Gem"));
+      if (gems.length === 0) { recentEmptyLabel = label; continue; }
+
+      const primaryGems: string[] = [];
+      const supportGems: string[] = [];
+
+      for (const gem of gems) {
+        const rawId = gem.getAttribute("gemId");
+        if (!rawId) continue;
+        const id = normalizeGemId(rawId);
+        if (!Gems[id]) continue;
+        if (!gemIds.includes(id)) gemIds.push(id);
+        if (Gems[id].is_support) supportGems.push(id);
+        else primaryGems.push(id);
       }
+
+      if (primaryGems.length === 0 && supportGems.length === 0) continue;
+
+      const title = cleanText(recentEmptyLabel || label || "");
+      recentEmptyLabel = undefined;
+      groups.push({
+        title,
+        primaryGems: primaryGems.length ? primaryGems : supportGems,
+        supportGems: primaryGems.length ? supportGems : [],
+      });
     }
+    return groups;
   }
 
-  // Also check SkillSet elements (newer PoB format)
+  const gemLinkSets: GemLinkSet[] = [];
   const skillSetElements = Array.from(doc.getElementsByTagName("SkillSet"));
   if (skillSetElements.length > 0) {
-    // Already covered by the Skill element scan above since SkillSet contains Skills
+    for (const set of skillSetElements) {
+      const title = cleanText(set.getAttribute("title") || "Default");
+      const groups = processSkillContainer(set);
+      if (groups.length > 0) gemLinkSets.push({ title, groups });
+    }
+  } else {
+    const groups = processSkillContainer(doc.documentElement);
+    if (groups.length > 0) gemLinkSets.push({ title: "Default", groups });
   }
 
   const gemNames = gemIds.map((id) => Gems[id]?.name ?? id);
 
-  return { characterClass, bandit, gemIds, gemNames };
+  const buildTrees: RouteData.BuildTree[] = [];
+  const specElements = Array.from(doc.getElementsByTagName("Spec"));
+  for (const spec of specElements) {
+    const url = spec.getElementsByTagName("URL")[0]?.textContent?.trim();
+    const version = spec.getAttribute("treeVersion");
+    if (url && version) {
+      buildTrees.push({
+        name: cleanText(spec.getAttribute("title") || "Default"),
+        version,
+        url,
+      });
+    }
+  }
+
+  return { characterClass, bandit, gemIds, gemNames, buildTrees, gemLinkSets };
 }
+

@@ -2,23 +2,26 @@ import React, { useEffect, useMemo, useRef } from "react";
 import { GemEntry } from "../data";
 import { useAppState } from "../state";
 
-const CONTEXT_BEFORE = 3;
-const CONTEXT_AFTER = 6;
-
 export function StepDisplay() {
   const { state, dispatch } = useAppState();
   const { flatSteps, currentIndex, gems, collectedGems, pobGemIds } = state;
   const currentRef = useRef<HTMLDivElement>(null);
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
-    currentRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    if (isFirstRender.current) {
+      // On initial mount, jump instantly so the user doesn't see a long scroll from the top
+      currentRef.current?.scrollIntoView({ block: "center", behavior: "instant" });
+      isFirstRender.current = false;
+    } else {
+      currentRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
   }, [currentIndex]);
 
   // Build questId → GemEntry[] lookup from the class's gem list
   const gemsByQuestId = useMemo(() => {
     const map = new Map<string, GemEntry[]>();
     for (const g of gems) {
-      // Apply PoB filter here so the map only contains relevant gems
       if (pobGemIds && !pobGemIds.has(g.gemId)) continue;
       const list = map.get(g.questId) ?? [];
       list.push(g);
@@ -35,13 +38,10 @@ export function StepDisplay() {
     );
   }
 
-  const start = Math.max(0, currentIndex - CONTEXT_BEFORE);
-  const end = Math.min(flatSteps.length - 1, currentIndex + CONTEXT_AFTER);
-
   const rows: React.ReactNode[] = [];
   let lastSection = "";
 
-  for (let i = start; i <= end; i++) {
+  for (let i = 0; i < flatSteps.length; i++) {
     const flat = flatSteps[i];
     const isCurrent = i === currentIndex;
     const isPast = i < currentIndex;
@@ -56,7 +56,6 @@ export function StepDisplay() {
       lastSection = sectionName;
     }
 
-    // Gem badges for quest hand-in steps
     const questGems = flat.step.questId
       ? (gemsByQuestId.get(flat.step.questId) ?? [])
       : [];

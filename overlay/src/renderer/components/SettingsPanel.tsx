@@ -25,7 +25,7 @@ export function SettingsPanel() {
   function importPob() {
     const code = local.pobCode.trim();
     if (!code) {
-      dispatch({ type: "SET_POB", pobGemIds: null });
+      dispatch({ type: "SET_POB", pobGemIds: null, buildTrees: null, gemLinkSets: null });
       setPobError("");
       setPobInfo("PoB filter cleared");
       return;
@@ -46,10 +46,11 @@ export function SettingsPanel() {
     };
     setLocal(newLocal);
 
-    dispatch({ type: "SET_POB", pobGemIds: new Set(result.gemIds) });
+    dispatch({ type: "SET_POB", pobGemIds: new Set(result.gemIds), buildTrees: result.buildTrees, gemLinkSets: result.gemLinkSets });
     setPobError("");
     setPobInfo(
-      `✓ ${result.gemIds.length} gems from PoB` +
+      `✓ ${result.gemIds.length} gems` +
+        (result.buildTrees.length ? ` · ${result.buildTrees.length} tree${result.buildTrees.length > 1 ? "s" : ""}` : "") +
         (result.characterClass ? ` · ${result.characterClass}` : "")
     );
   }
@@ -57,14 +58,6 @@ export function SettingsPanel() {
   async function applySettings() {
     await window.electronAPI.setSettings(local);
     dispatch({ type: "SET_SETTINGS", settings: local });
-
-    // Restart watcher with new path if changed
-    if (local.clientTxtPath !== state.settings.clientTxtPath) {
-      await window.electronAPI.stopWatcher();
-      if (local.clientTxtPath) {
-        await window.electronAPI.startWatcher(local.clientTxtPath);
-      }
-    }
 
     // Reload route if build config changed
     const needsReload =
@@ -78,11 +71,6 @@ export function SettingsPanel() {
     }
 
     dispatch({ type: "TOGGLE_SETTINGS" });
-  }
-
-  async function pickFile() {
-    const path = await window.electronAPI.openFilePicker();
-    if (path) update("clientTxtPath", path);
   }
 
   return (
@@ -115,7 +103,7 @@ export function SettingsPanel() {
                 className="settings-btn settings-reset-btn"
                 onClick={() => {
                   update("pobCode", "");
-                  dispatch({ type: "SET_POB", pobGemIds: null });
+                  dispatch({ type: "SET_POB", pobGemIds: null, buildTrees: null, gemLinkSets: null });
                   setPobInfo("");
                   setPobError("");
                   window.electronAPI.setSettings({ ...local, pobCode: "" });
@@ -131,29 +119,6 @@ export function SettingsPanel() {
         )}
         <span style={{ fontSize: 10, color: "var(--text-dim)" }}>
           In PoB: Import/Export Build → Export → copy the code
-        </span>
-      </div>
-
-      {/* ── client.txt path ── */}
-      <div className="settings-row">
-        <label className="settings-label">Client.txt path</label>
-        <div className="settings-file-row">
-          <input
-            className="settings-input"
-            value={local.clientTxtPath}
-            onChange={(e) => update("clientTxtPath", e.target.value)}
-            placeholder="C:\...\logs\Client.txt"
-          />
-          <button className="settings-btn" onClick={pickFile}>
-            Browse
-          </button>
-        </div>
-        <span style={{ fontSize: 10, color: "var(--text-dim)" }}>
-          {local.clientTxtPath
-            ? (state.lastZone
-                ? `Last zone: ${state.lastZone}`
-                : "Watching — enter a zone to test")
-            : "No path set"}
         </span>
       </div>
 

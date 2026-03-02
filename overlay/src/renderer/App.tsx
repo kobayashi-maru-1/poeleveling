@@ -1,8 +1,10 @@
 import React from "react";
+import { GemLinksPanel } from "./components/GemLinksPanel";
 import { GemPanel } from "./components/GemPanel";
 import { OverlayHeader } from "./components/OverlayHeader";
 import { SettingsPanel } from "./components/SettingsPanel";
 import { StepDisplay } from "./components/StepDisplay";
+import { TreePanel } from "./components/TreePanel";
 import { useAppState } from "./state";
 
 export function App() {
@@ -38,6 +40,12 @@ export function App() {
 
             {/* Collapsible gem panel */}
             {state.showGems && <GemPanel />}
+
+            {/* Collapsible gem links panel */}
+            {state.showLinks && <GemLinksPanel />}
+
+            {/* Collapsible passive tree panel */}
+            {state.showTree && <TreePanel />}
 
             {/* Settings panel */}
             {state.showSettings && <SettingsPanel />}

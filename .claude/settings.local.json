@@ -6,7 +6,9 @@
       "WebFetch(domain:api.github.com)",
       "Bash(npm install)",
       "Bash(npm run typecheck)",
-      "Bash(npm run build)"
+      "Bash(npm run build)",
+      "Bash(ls -lh *.json)",
+      "Read(//c/Users/andys/OneDrive/poeleveling-Github/seeding/**)"
     ]
   }
 }

@@ -2,7 +2,6 @@ import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import Store from "electron-store";
 import * as fs from "fs";
 import * as path from "path";
-import { LogWatcher } from "./log-watcher";
 
 // Must be set before app is ready so userData resolves to %APPDATA%\poeleveling
 app.setName("poeleveling");
@@ -10,7 +9,6 @@ app.setName("poeleveling");
 // Persistent settings store
 const store = new Store<Settings>({
   defaults: {
-    clientTxtPath: "",
     opacity: 0.92,
     characterClass: "",
     bandit: "None",
@@ -22,7 +20,6 @@ const store = new Store<Settings>({
 });
 
 interface Settings {
-  clientTxtPath: string;
   opacity: number;
   characterClass: string;
   bandit: "None" | "Oak" | "Kraityn" | "Alira";
@@ -35,7 +32,6 @@ interface Settings {
 const HEADER_HEIGHT = 34; // px — collapsed window shows only the title bar
 
 let mainWindow: BrowserWindow | null = null;
-let logWatcher: LogWatcher | null = null;
 let expandedHeight: number | null = null; // saved before collapsing
 
 // Resolve path to common/data directory (dev vs packaged)
@@ -129,7 +125,6 @@ ipcMain.handle("get-route-sources", () => {
 
 ipcMain.handle("get-settings", () => {
   return {
-    clientTxtPath: store.get("clientTxtPath"),
     opacity: store.get("opacity"),
     characterClass: store.get("characterClass"),
     bandit: store.get("bandit"),
@@ -147,31 +142,6 @@ ipcMain.handle("set-settings", (_event, settings: Partial<Settings>) => {
   if (settings.opacity !== undefined && mainWindow) {
     mainWindow.setOpacity(settings.opacity);
   }
-});
-
-ipcMain.handle("open-file-picker", async () => {
-  if (!mainWindow) return null;
-  const result = await dialog.showOpenDialog(mainWindow, {
-    title: "Select PoE Client.txt",
-    filters: [{ name: "Text Files", extensions: ["txt"] }],
-    properties: ["openFile"],
-  });
-  return result.canceled ? null : result.filePaths[0];
-});
-
-ipcMain.handle("start-watcher", (_event, clientTxtPath: string) => {
-  if (logWatcher) {
-    logWatcher.stop();
-  }
-  logWatcher = new LogWatcher(clientTxtPath, (zoneName) => {
-    mainWindow?.webContents.send("zone-entered", zoneName);
-  });
-  logWatcher.start();
-});
-
-ipcMain.handle("stop-watcher", () => {
-  logWatcher?.stop();
-  logWatcher = null;
 });
 
 ipcMain.handle("collapse-window", () => {
@@ -202,18 +172,8 @@ ipcMain.handle("open-external", (_event, url: string) => {
 
 app.whenReady().then(() => {
   createWindow();
-
-  // Auto-start log watcher if path is saved
-  const savedPath = store.get("clientTxtPath");
-  if (savedPath && fs.existsSync(savedPath)) {
-    logWatcher = new LogWatcher(savedPath, (zoneName) => {
-      mainWindow?.webContents.send("zone-entered", zoneName);
-    });
-    logWatcher.start();
-  }
 });
 
 app.on("window-all-closed", () => {
-  logWatcher?.stop();
   app.quit();
 });
