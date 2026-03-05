@@ -1,7 +1,7 @@
 use crate::store;
 use serde_json::Value;
 use std::{fs, path::PathBuf};
-use tauri::{command, AppHandle, WebviewWindow};
+use tauri::{command, AppHandle, Manager, WebviewWindow};
 
 // ─── Route files ─────────────────────────────────────────────────────────────
 
@@ -37,8 +37,6 @@ pub fn get_settings(app: AppHandle) -> store::Settings {
 pub fn set_settings(app: AppHandle, settings: Value) -> Result<(), String> {
     let mut current = store::load(&app);
 
-    // Update only the keys that are present in the incoming JSON object.
-    // This mirrors how electron-store.set() works with partial updates.
     if let Some(v) = settings.get("opacity").and_then(Value::as_f64) {
         current.opacity = v;
     }
@@ -67,13 +65,11 @@ pub fn set_settings(app: AppHandle, settings: Value) -> Result<(), String> {
 /// Saves the current height first so expand_window can restore it.
 #[command]
 pub fn collapse_window(app: AppHandle, window: WebviewWindow) -> Result<(), String> {
-    // Save current physical height before collapsing so expand can restore it
     let mut settings = store::load(&app);
     let physical = window.outer_size().map_err(|e| e.to_string())?;
     settings.window_height = physical.height;
     store::save(&app, &settings)?;
 
-    // Use logical pixels so the header is the right size at any DPI scale
     let scale = window.scale_factor().map_err(|e| e.to_string())?;
     window
         .set_size(tauri::Size::Logical(tauri::LogicalSize {
@@ -110,11 +106,10 @@ pub fn expand_window(app: AppHandle, window: WebviewWindow) -> Result<(), String
 /// - In dev builds: uses CARGO_MANIFEST_DIR (embedded at compile time) to find
 ///   the workspace root, then resolves common/data from there.
 /// - In release builds: expects data to be bundled alongside the binary.
-fn get_data_dir(_app: &AppHandle) -> Result<PathBuf, String> {
+fn get_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     #[cfg(debug_assertions)]
     {
-        // CARGO_MANIFEST_DIR is set to overlay-tauri/src-tauri/ at compile time.
-        // Two levels up reaches the workspace root (poeleveling-Github/).
+        let _ = app; // not needed in dev builds
         let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
         let workspace_root = manifest
             .parent() // overlay-tauri/
@@ -129,7 +124,7 @@ fn get_data_dir(_app: &AppHandle) -> Result<PathBuf, String> {
         // See tauri.conf.json bundle.resources for where they're copied from.
         app.path()
             .resource_dir()
-            .map(|p| p.join("common-data"))
-            .map_err(|e| e.to_string())
+            .map(|p: std::path::PathBuf| p.join("common-data"))
+            .map_err(|e: tauri::Error| e.to_string())
     }
 }

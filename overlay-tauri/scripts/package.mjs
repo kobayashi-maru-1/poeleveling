@@ -9,8 +9,6 @@
  * Output: dist-installer/PoE.Leveling.Overlay-tauri-win-x64-<version>.zip
  *   overlay-tauri.exe
  *   common-data/routes/act-1.txt … act-10.txt
- *
- * Requirements: cargo in PATH, Node.js 18+, Windows 10+ (uses built-in tar.exe)
  */
 
 import { execSync }                                           from 'child_process';
@@ -54,10 +52,8 @@ const staging = join(distDir, '_staging');
 rmSync(staging, { recursive: true, force: true });
 mkdirSync(join(staging, 'common-data', 'routes'), { recursive: true });
 
-// Copy the exe
 copyFileSync(exePath, join(staging, 'overlay-tauri.exe'));
 
-// Copy route files (bundled as resources in release builds)
 const routesSrc = join(repoRoot, 'common', 'data', 'routes');
 for (const f of readdirSync(routesSrc)) {
   if (f.endsWith('.txt')) {
@@ -65,12 +61,15 @@ for (const f of readdirSync(routesSrc)) {
   }
 }
 
-// Create the zip using Windows' built-in tar.exe (-a = auto-format from extension)
+// Create zip using .NET ZipFile::CreateFromDirectory so paths inside the zip
+// are relative to the staging dir (no _staging\ prefix).
 const zipName = `${productName}-tauri-win-x64-${version}.zip`;
 const zipPath = join(distDir, zipName);
 if (existsSync(zipPath)) rmSync(zipPath);
-execSync(`tar -a -c -f "${zipPath}" -C "${staging}" .`, { stdio: 'inherit' });
+
+const psCmd = `Add-Type -AssemblyName System.IO.Compression.FileSystem; [System.IO.Compression.ZipFile]::CreateFromDirectory('${staging}', '${zipPath}')`;
+execSync(`powershell.exe -NoProfile -Command "${psCmd}"`, { stdio: 'inherit' });
 
 rmSync(staging, { recursive: true });
 
-console.log(`\n4/4  Done → dist-installer/${zipName}`);
+console.log(`\n4/4  Done -> dist-installer/${zipName}`);
