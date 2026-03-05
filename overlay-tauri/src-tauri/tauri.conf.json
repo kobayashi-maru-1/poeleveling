@@ -31,8 +31,8 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
-    "icon": [],
+    "targets": ["nsis"],
+    "icon": ["../../common/icons/icon.ico"],
     "resources": {
       "../../common/data/routes": "common-data/routes"
     }

@@ -28,6 +28,7 @@
     "typescript": "^5.4.0"
   },
   "build": {
+    "icon": "../common/icons/icon.ico",
     "electronVersion": "33.4.11",
     "electronLanguages": [
       "en-US"
