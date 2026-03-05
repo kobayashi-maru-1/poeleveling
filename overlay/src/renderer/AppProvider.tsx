@@ -2,9 +2,11 @@ import React, { useEffect, useReducer } from "react";
 import { ParseConfig, flattenRoute, getGemsForClass, parseRouteSources } from "./data";
 import { parsePobCode } from "./pob";
 import { AppContext, initialState, reducer } from "./state";
+import { useAPI } from "./api/index";
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  const api = useAPI();
 
   // Load settings and route on mount
   useEffect(() => {
@@ -12,11 +14,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     async function init() {
       try {
-        const settings = await window.electronAPI.getSettings();
+        const settings = await api.getSettings();
         if (cancelled) return;
         dispatch({ type: "SET_SETTINGS", settings });
 
-        const sources = await window.electronAPI.getRouteSources();
+        const sources = await api.getRouteSources();
         if (cancelled) return;
 
         const config: ParseConfig = {

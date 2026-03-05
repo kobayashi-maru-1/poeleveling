@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "@renderer/*": ["../overlay/src/renderer/*"],
+      "@shared/*": ["../overlay/src/shared/*"],
+      "@common/*": ["../common/*"]
+    },
+    "types": ["vite/client"]
+  },
+  "include": ["src", "../overlay/src/renderer", "../overlay/src/shared", "../common"]
+}

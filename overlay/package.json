@@ -22,14 +22,16 @@
     "@types/react": "^18.2.69",
     "@types/react-dom": "^18.2.22",
     "@vitejs/plugin-react": "^4.2.1",
-    "electron": "^33.0.0",
+    "electron": "^33.4.11",
     "electron-builder": "^24.13.0",
     "electron-vite": "^2.3.0",
     "typescript": "^5.4.0"
   },
   "build": {
     "electronVersion": "33.4.11",
-    "electronLanguages": ["en-US"],
+    "electronLanguages": [
+      "en-US"
+    ],
     "appId": "com.poeleveling.overlay",
     "productName": "PoE Leveling Overlay",
     "copyright": "Copyright © 2024",

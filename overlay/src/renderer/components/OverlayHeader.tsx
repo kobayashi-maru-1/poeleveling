@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useAppState } from "../state";
+import { useAPI } from "../api/index";
 
 export function OverlayHeader() {
   const { state, dispatch } = useAppState();
+  const api = useAPI();
   const cur = state.flatSteps[state.currentIndex];
   const title = cur ? cur.sectionName : "PoE Leveling";
   const [open, setOpen] = useState(false);
@@ -112,10 +114,10 @@ export function OverlayHeader() {
         onClick={() => {
           if (state.collapsed) {
             dispatch({ type: "TOGGLE_COLLAPSE" });
-            window.electronAPI.expandWindow();
+            api.expandWindow();
           } else {
             dispatch({ type: "TOGGLE_COLLAPSE" });
-            window.electronAPI.collapseWindow();
+            api.collapseWindow();
           }
         }}
       >
@@ -126,7 +128,7 @@ export function OverlayHeader() {
       <button
         className="header-btn close"
         title="Close"
-        onClick={() => window.electronAPI.closeWindow()}
+        onClick={() => api.closeWindow()}
       >
         ✕
       </button>

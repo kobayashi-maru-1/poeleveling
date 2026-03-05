@@ -3,10 +3,12 @@
   "workspaces": [
     "seeding",
     "web",
-    "overlay"
+    "overlay",
+    "overlay-tauri"
   ],
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^4.3.0",
+    "electron-vite": "^2.3.0",
     "prettier": "^2.8.8"
   },
   "dependencies": {

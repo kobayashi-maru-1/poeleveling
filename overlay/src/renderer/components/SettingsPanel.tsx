@@ -3,9 +3,11 @@ import { Characters } from "../data";
 import { parsePobCode } from "../pob";
 import { reloadRoute, useAppState } from "../state";
 import type { Settings } from "../../shared/types";
+import { useAPI } from "../api/index";
 
 export function SettingsPanel() {
   const { state, dispatch } = useAppState();
+  const api = useAPI();
   const [local, setLocal] = useState<Settings>({ ...state.settings });
   const [pobError, setPobError] = useState("");
   const [pobInfo, setPobInfo] = useState(
@@ -33,7 +35,7 @@ export function SettingsPanel() {
 
     const result = parsePobCode(code);
     if ("error" in result) {
-      setPobError(result.error);
+      setPobError(result.error ?? "");
       setPobInfo("");
       return;
     }
@@ -56,7 +58,7 @@ export function SettingsPanel() {
   }
 
   async function applySettings() {
-    await window.electronAPI.setSettings(local);
+    await api.setSettings(local);
     dispatch({ type: "SET_SETTINGS", settings: local });
 
     // Reload route if build config changed
@@ -67,7 +69,7 @@ export function SettingsPanel() {
       local.characterClass !== state.settings.characterClass;
 
     if (needsReload) {
-      await reloadRoute(dispatch, local);
+      await reloadRoute(dispatch, api, local);
     }
 
     dispatch({ type: "TOGGLE_SETTINGS" });
@@ -106,7 +108,7 @@ export function SettingsPanel() {
                   dispatch({ type: "SET_POB", pobGemIds: null, buildTrees: null, gemLinkSets: null });
                   setPobInfo("");
                   setPobError("");
-                  window.electronAPI.setSettings({ ...local, pobCode: "" });
+                  api.setSettings({ ...local, pobCode: "" });
                 }}
               >
                 Clear
