@@ -22,6 +22,10 @@ const root       = resolve(__dirname, '..');          // overlay-tauri/
 const srcTauri   = join(root, 'src-tauri');
 const repoRoot   = resolve(root, '..');               // poeleveling-Github/
 
+// Ensure cargo is on PATH (execSync uses cmd.exe which may not have ~/.cargo/bin)
+const cargoBin = join(process.env.USERPROFILE ?? process.env.HOME ?? '', '.cargo', 'bin');
+const cargoEnv = { ...process.env, PATH: `${cargoBin};${process.env.PATH ?? ''}` };
+
 // Read product name + version from tauri.conf.json
 const conf        = JSON.parse(readFileSync(join(srcTauri, 'tauri.conf.json'), 'utf8'));
 const version     = conf.version;
@@ -33,11 +37,11 @@ execSync('npm run vite-build', { cwd: root, stdio: 'inherit' });
 
 // ── 2. Build the Rust binary (release) ───────────────────────────────────────
 console.log('\n2/4  Building Rust binary…');
-execSync('cargo build --release', { cwd: srcTauri, stdio: 'inherit' });
+execSync('cargo build --release', { cwd: srcTauri, stdio: 'inherit', env: cargoEnv });
 
 // ── 3. Locate the compiled exe via cargo metadata ────────────────────────────
 console.log('\n3/4  Assembling package…');
-const meta    = JSON.parse(execSync('cargo metadata --format-version 1 --no-deps', { cwd: srcTauri }).toString());
+const meta    = JSON.parse(execSync('cargo metadata --format-version 1 --no-deps', { cwd: srcTauri, env: cargoEnv }).toString());
 const exePath = join(meta.target_directory, 'release', 'overlay-tauri.exe');
 
 if (!existsSync(exePath)) {
