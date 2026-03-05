@@ -25,8 +25,8 @@ export const tauriAPI: OverlayAPI = {
   // Minimizes the window to the taskbar.
   minimizeWindow: () => { getCurrentWindow().minimize().catch(console.error); },
 
-  // Closes the application.
-  closeWindow: () => { getCurrentWindow().close().catch(console.error); },
+  // Closes the application via a Rust command (avoids JS window-close permission).
+  closeWindow: () => { invoke("close_window").catch(console.error); },
 
   // Opens a URL in the system default browser via the opener plugin.
   openExternal: (url) => openUrl(url),

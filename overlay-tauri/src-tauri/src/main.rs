@@ -17,6 +17,7 @@ fn main() {
             commands::set_settings,
             commands::collapse_window,
             commands::expand_window,
+            commands::close_window,
         ])
         .setup(|app| {
             let window = app.get_webview_window("main")

@@ -63,23 +63,31 @@ pub fn set_settings(app: AppHandle, settings: Value) -> Result<(), String> {
 
 // ─── Window management ────────────────────────────────────────────────────────
 
-/// Collapse the overlay to show only the header bar (36px tall).
+/// Collapse the overlay to show only the header bar (36 logical px tall).
 /// Saves the current height first so expand_window can restore it.
 #[command]
 pub fn collapse_window(app: AppHandle, window: WebviewWindow) -> Result<(), String> {
-    // Save current height before collapsing
+    // Save current physical height before collapsing so expand can restore it
     let mut settings = store::load(&app);
-    let current_size = window.outer_size().map_err(|e| e.to_string())?;
-    settings.window_height = current_size.height;
+    let physical = window.outer_size().map_err(|e| e.to_string())?;
+    settings.window_height = physical.height;
     store::save(&app, &settings)?;
 
-    // Resize to header-only height
+    // Use logical pixels so the header is the right size at any DPI scale
+    let scale = window.scale_factor().map_err(|e| e.to_string())?;
     window
-        .set_size(tauri::Size::Physical(tauri::PhysicalSize {
-            width: current_size.width,
-            height: 36,
+        .set_size(tauri::Size::Logical(tauri::LogicalSize {
+            width: physical.width as f64 / scale,
+            height: 36.0,
         }))
         .map_err(|e| e.to_string())
+}
+
+/// Close the overlay window. Called from the renderer's close button.
+/// Using a Rust command avoids the need for JS window-close capabilities.
+#[command]
+pub fn close_window(window: WebviewWindow) -> Result<(), String> {
+    window.close().map_err(|e| e.to_string())
 }
 
 /// Restore the overlay to its previous full height (saved by collapse_window).
