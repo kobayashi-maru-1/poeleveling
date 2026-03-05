@@ -9,6 +9,11 @@
  * Output: dist-installer/PoE.Leveling.Overlay-tauri-win-x64-<version>.zip
  *   overlay-tauri.exe
  *   common-data/routes/act-1.txt … act-10.txt
+ *
+ * Uses `tauri build` (not plain `cargo build --release`) so that Tauri's CLI
+ * sets TAURI_DIST_DIR and other env vars that tauri-codegen needs to properly
+ * embed the Vite frontend into the binary. tauri.conf.json has bundle.active:false
+ * so no installer is created — we just grab the raw exe and zip it ourselves.
  */
 
 import { execSync }                                           from 'child_process';
@@ -31,16 +36,14 @@ const conf        = JSON.parse(readFileSync(join(srcTauri, 'tauri.conf.json'), '
 const version     = conf.version;
 const productName = conf.productName.replace(/\s+/g, '.');
 
-// ── 1. Build the Vite frontend ────────────────────────────────────────────────
-console.log('1/4  Building frontend…');
-execSync('npm run vite-build', { cwd: root, stdio: 'inherit' });
-
-// ── 2. Build the Rust binary (release) ───────────────────────────────────────
-console.log('\n2/4  Building Rust binary…');
-execSync('cargo build --release', { cwd: srcTauri, stdio: 'inherit', env: cargoEnv });
+// ── 1+2. Build frontend + Rust binary via `tauri build` ───────────────────────
+// tauri build sets TAURI_DIST_DIR so the Vite assets are properly embedded.
+// bundle.active:false in tauri.conf.json means no NSIS installer is created.
+console.log('1/3  Running tauri build (frontend + Rust)…');
+execSync('npm run build', { cwd: root, stdio: 'inherit', env: cargoEnv });
 
 // ── 3. Locate the compiled exe via cargo metadata ────────────────────────────
-console.log('\n3/4  Assembling package…');
+console.log('\n2/3  Assembling package…');
 const meta    = JSON.parse(execSync('cargo metadata --format-version 1 --no-deps', { cwd: srcTauri, env: cargoEnv }).toString());
 const exePath = join(meta.target_directory, 'release', 'overlay-tauri.exe');
 
@@ -76,4 +79,4 @@ execSync(`powershell.exe -NoProfile -Command "${psCmd}"`, { stdio: 'inherit' });
 
 rmSync(staging, { recursive: true });
 
-console.log(`\n4/4  Done -> dist-installer/${zipName}`);
+console.log(`\n3/3  Done -> dist-installer/${zipName}`);
