@@ -1,18 +1,23 @@
-# Cargo configuration for overlay-tauri (ARM64 Windows MSVC)
-# This tells Cargo which linker to use for aarch64-pc-windows-msvc.
-# Required because MSYS2's /usr/bin/link.exe would be found first in PATH otherwise.
-
+# Cargo configuration for overlay-tauri
+#
+# ARM64 Windows only: pins the MSVC linker so MSYS2's /usr/bin/link.exe is not
+# picked up by mistake. x64 machines can ignore this section entirely.
 [target.aarch64-pc-windows-msvc]
 linker = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostarm64\\arm64\\link.exe"
-ar = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostarm64\\arm64\\lib.exe"
+ar     = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\bin\\Hostarm64\\arm64\\lib.exe"
 
-[build]
-# Move build artifacts outside OneDrive to avoid OneDrive file I/O interference.
-# OneDrive's file-on-demand feature can cause "output path is not a writable directory"
-# errors when build scripts try to write to incremental compilation directories.
-target-dir = "C:\\Users\\andys\\AppData\\Local\\overlay-tauri-target"
-
-[env]
-# Library search paths for MSVC + Windows SDK (ARM64).
-# Lets link.exe find kernel32.lib, ucrt.lib, etc. without a VS Developer Prompt.
-LIB = "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools\\VC\\Tools\\MSVC\\14.44.35207\\lib\\arm64;C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.26100.0\\ucrt\\arm64;C:\\Program Files (x86)\\Windows Kits\\10\\Lib\\10.0.26100.0\\um\\arm64"
+# ─── Machine-local overrides ─────────────────────────────────────────────────
+# For ARM64 Windows + OneDrive repos, create the file
+#   overlay-tauri/src-tauri/.cargo/config.local.toml
+# and add:
+#
+#   [build]
+#   # Moves build cache outside OneDrive (prevents "output path not writable" errors)
+#   target-dir = "C:\\Users\\<you>\\AppData\\Local\\overlay-tauri-target"
+#
+#   [env]
+#   # ARM64 Windows SDK lib paths (only needed if the linker can't auto-detect them)
+#   LIB = "C:\\Program Files (x86)\\...\\lib\\arm64;...\\ucrt\\arm64;...\\um\\arm64"
+#
+# x64 Windows: no config.local.toml needed — standard MSVC toolchain auto-detects
+# all library paths through the Windows registry.
