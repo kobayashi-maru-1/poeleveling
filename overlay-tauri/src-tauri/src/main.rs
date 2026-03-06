@@ -12,7 +12,6 @@ fn main() {
         .plugin(tauri_plugin_opener::init())
         // Register all IPC commands the renderer can call via invoke()
         .invoke_handler(tauri::generate_handler![
-            commands::get_route_sources,
             commands::get_settings,
             commands::set_settings,
             commands::collapse_window,
@@ -23,37 +22,40 @@ fn main() {
             let window = app.get_webview_window("main")
                 .expect("main window not found");
 
-            // Restore saved window position and size
-            let settings = store::load(app.handle());
-            let _ = window.set_position(tauri::Position::Physical(tauri::PhysicalPosition {
-                x: settings.window_x,
-                y: settings.window_y,
+            // Restore saved window position and size.
+            // windowBounds values are logical pixels (DPI-independent), matching Electron's units.
+            let settings = store::load();
+            let _ = window.set_position(tauri::Position::Logical(tauri::LogicalPosition {
+                x: settings.window_bounds.x as f64,
+                y: settings.window_bounds.y as f64,
             }));
-            let _ = window.set_size(tauri::Size::Physical(tauri::PhysicalSize {
-                width: settings.window_width,
-                height: settings.window_height,
+            let _ = window.set_size(tauri::Size::Logical(tauri::LogicalSize {
+                width: settings.window_bounds.width as f64,
+                height: settings.window_bounds.height as f64,
             }));
 
             // Keep the overlay above all other windows (equivalent to Electron's
-            // setAlwaysOnTop(true, "screen-saver") — works with PoE borderless windowed)
+            // setAlwaysOnTop(true, "screen-saver") -- works with PoE borderless windowed)
             let _ = window.set_always_on_top(true);
 
             Ok(())
         })
         .on_window_event(|window, event| {
-            // Save window position and size when the user closes or moves the window
+            // Save window position and size when the user closes the window.
+            // Divide physical pixels by scale factor to get logical pixels (Electron's unit).
             if let tauri::WindowEvent::CloseRequested { .. } = event {
                 if let Ok(pos) = window.outer_position() {
                     if let Ok(size) = window.outer_size() {
-                        let mut settings = store::load(window.app_handle());
-                        settings.window_x = pos.x;
-                        settings.window_y = pos.y;
-                        settings.window_width = size.width;
-                        // Only save height if not in collapsed state (> 100px)
-                        if size.height > 100 {
-                            settings.window_height = size.height;
+                        let scale = window.scale_factor().unwrap_or(1.0);
+                        let mut settings = store::load();
+                        settings.window_bounds.x = (pos.x as f64 / scale) as i32;
+                        settings.window_bounds.y = (pos.y as f64 / scale) as i32;
+                        settings.window_bounds.width = (size.width as f64 / scale) as u32;
+                        // Only save height if not in collapsed state (> 100 logical px)
+                        if (size.height as f64 / scale) as u32 > 100 {
+                            settings.window_bounds.height = (size.height as f64 / scale) as u32;
                         }
-                        let _ = store::save(window.app_handle(), &settings);
+                        let _ = store::save(&settings);
                     }
                 }
             }

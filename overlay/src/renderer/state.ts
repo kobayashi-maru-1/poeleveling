@@ -8,7 +8,7 @@ import {
   parseRouteSources,
 } from "./data";
 import type { Settings } from "../shared/types";
-import type { OverlayAPI } from "./api/index";
+import { fetchRouteSources } from "./remote-data";
 import type { RouteData } from "../../../common/route-processing/types";
 import type { GemLinkSet } from "./pob";
 
@@ -237,12 +237,11 @@ export function useAppState() {
 // Helper: reload route when settings change
 export async function reloadRoute(
   dispatch: React.Dispatch<Action>,
-  api: OverlayAPI,
   settings: Settings
 ) {
   dispatch({ type: "SET_LOADING", loading: true });
   try {
-    const sources = await api.getRouteSources();
+    const sources = await fetchRouteSources();
     const config: ParseConfig = {
       leagueStart: settings.leagueStart,
       library: settings.library,

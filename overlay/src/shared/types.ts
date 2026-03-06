@@ -12,7 +12,6 @@ export interface Settings {
 }
 
 export interface ElectronAPI {
-  getRouteSources(): Promise<string[]>;
   getSettings(): Promise<Settings>;
   setSettings(settings: Partial<Settings>): Promise<void>;
   collapseWindow(): Promise<void>;

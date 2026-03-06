@@ -1,11 +1,4 @@
-// Direct JSON imports — bundled by Vite at build time
-import AREAS_RAW from "@common/data/json/areas.json";
-import GEMS_RAW from "@common/data/json/gems.json";
-import QUESTS_RAW from "@common/data/json/quests.json";
-import CHARACTERS_RAW from "@common/data/json/characters.json";
-import GEM_COLOURS_RAW from "@common/data/json/gem-colours.json";
-import VAAL_GEM_LOOKUP_RAW from "@common/data/json/vaal-gem-lookup.json";
-import AWAKENED_GEM_LOOKUP_RAW from "@common/data/json/awakened-gem-lookup.json";
+import { fetchJsonFile } from "./remote-data";
 
 // ─── Type aliases ─────────────────────────────────────────────────────────────
 
@@ -61,14 +54,37 @@ export type Quests = Record<string, Quest>;
 export type Characters = Record<string, Character>;
 export type GemColours = Record<string, string>; // attribute → hex colour
 
-export const Areas = AREAS_RAW as unknown as Areas;
-export const Gems = GEMS_RAW as unknown as Gems;
-export const Quests = QUESTS_RAW as unknown as Quests;
-export const Characters = CHARACTERS_RAW as unknown as Characters;
-export const GemColours = GEM_COLOURS_RAW as unknown as GemColours;
+// These are populated by loadData() before any route parsing occurs.
+export let Areas: Areas = {} as Areas;
+export let Gems: Gems = {} as Gems;
+export let Quests: Quests = {} as Quests;
+export let Characters: Characters = {} as Characters;
+export let GemColours: GemColours = {} as GemColours;
 // Gem ID variant lookups: Vaal/Awakened → normal gem ID
-export const VaalGemLookup = VAAL_GEM_LOOKUP_RAW as Record<string, string>;
-export const AwakenedGemLookup = AWAKENED_GEM_LOOKUP_RAW as Record<string, string>;
+export let VaalGemLookup: Record<string, string> = {};
+export let AwakenedGemLookup: Record<string, string> = {};
+
+/** Fetch all JSON data files from GitHub and populate the module-level exports. */
+export async function loadData(): Promise<void> {
+  const [areas, gems, quests, characters, gemColours, vaalLookup, awakenedLookup] =
+    await Promise.all([
+      fetchJsonFile<Areas>("areas"),
+      fetchJsonFile<Gems>("gems"),
+      fetchJsonFile<Quests>("quests"),
+      fetchJsonFile<Characters>("characters"),
+      fetchJsonFile<GemColours>("gem-colours"),
+      fetchJsonFile<Record<string, string>>("vaal-gem-lookup"),
+      fetchJsonFile<Record<string, string>>("awakened-gem-lookup"),
+    ]);
+  Areas = areas;
+  Gems = gems;
+  Quests = quests;
+  Characters = characters;
+  GemColours = gemColours;
+  VaalGemLookup = vaalLookup;
+  AwakenedGemLookup = awakenedLookup;
+  areaNameMap = buildAreaNameMap();
+}
 
 // ─── Route Parsing ────────────────────────────────────────────────────────────
 
@@ -462,4 +478,4 @@ export function buildAreaNameMap(): Map<string, string[]> {
   return map;
 }
 
-export const areaNameMap = buildAreaNameMap();
+export let areaNameMap: Map<string, string[]> = new Map();

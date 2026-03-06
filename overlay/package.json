@@ -42,16 +42,6 @@
     "files": [
       "out/**/*"
     ],
-    "extraResources": [
-      {
-        "from": "../common/data",
-        "to": "common-data",
-        "filter": [
-          "json/**/*",
-          "routes/**/*"
-        ]
-      }
-    ],
     "win": {
       "target": [
         {

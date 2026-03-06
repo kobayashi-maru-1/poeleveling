@@ -7,7 +7,7 @@ import React, {
 import type { SkillTree } from "../../../../common/data/tree";
 import type { UrlTreeDelta } from "../tree/delta";
 import { buildUrlTreeDelta, calculateBounds } from "../tree/delta";
-import { TREE_DATA_LOOKUP, type TreeEntry } from "../tree/loader";
+import { getTreeEntry, type TreeEntry } from "../tree/loader";
 import { buildStyle } from "../tree/svg";
 import { buildUrlTree, type UrlTree } from "../tree/url-tree";
 import { useAppState } from "../state";
@@ -204,18 +204,11 @@ export function TreePanel() {
     const currentBuildTree = buildTrees[curIndex];
     const version = currentBuildTree.version;
 
-    const entry = TREE_DATA_LOOKUP[version];
-    if (!entry) {
-      setError(`No tree data for version ${version.replace("_", ".")}. Re-seed the tree data.`);
-      setRenderData(null);
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     const safeIndex = Math.min(treeIndex, buildTrees.length - 1);
-    entry
+    getTreeEntry(version)
       .then(([skillTree, nodeLookup, svg, viewBox]: TreeEntry) => {
         const currentUrlTree = buildUrlTree(currentBuildTree, skillTree, nodeLookup);
 

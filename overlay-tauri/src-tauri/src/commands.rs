@@ -1,41 +1,21 @@
 use crate::store;
 use serde_json::Value;
-use std::{fs, path::PathBuf};
-use tauri::{command, AppHandle, Manager, WebviewWindow};
+use tauri::{command, AppHandle, WebviewWindow};
 
-// ─── Route files ─────────────────────────────────────────────────────────────
-
-/// Read all 10 act route files and return them as an array of strings.
-/// Matches the "get-route-sources" IPC handler in the Electron main process.
-#[command]
-pub fn get_route_sources(app: AppHandle) -> Result<Vec<String>, String> {
-    let routes_dir = get_data_dir(&app)?.join("routes");
-    let mut sources = Vec::new();
-
-    for act in 1..=10 {
-        let path = routes_dir.join(format!("act-{}.txt", act));
-        let content = fs::read_to_string(&path)
-            .map_err(|e| format!("Failed to read act-{}.txt: {}", act, e))?;
-        sources.push(content);
-    }
-
-    Ok(sources)
-}
-
-// ─── Settings ─────────────────────────────────────────────────────────────────
+// --- Settings ----------------------------------------------------------------
 
 /// Return the current settings to the renderer.
 #[command]
-pub fn get_settings(app: AppHandle) -> store::Settings {
-    store::load(&app)
+pub fn get_settings(_app: AppHandle) -> store::Settings {
+    store::load()
 }
 
 /// Merge a partial settings object (only the keys the renderer sends) into
 /// the saved settings, then persist to disk.
 /// The renderer sends Partial<Settings>, so each field may or may not be present.
 #[command]
-pub fn set_settings(app: AppHandle, settings: Value) -> Result<(), String> {
-    let mut current = store::load(&app);
+pub fn set_settings(_app: AppHandle, settings: Value) -> Result<(), String> {
+    let mut current = store::load();
 
     if let Some(v) = settings.get("opacity").and_then(Value::as_f64) {
         current.opacity = v;
@@ -56,21 +36,23 @@ pub fn set_settings(app: AppHandle, settings: Value) -> Result<(), String> {
         current.pob_code = v.to_string();
     }
 
-    store::save(&app, &current)
+    store::save(&current)
 }
 
-// ─── Window management ────────────────────────────────────────────────────────
+// --- Window management -------------------------------------------------------
 
 /// Collapse the overlay to show only the header bar (36 logical px tall).
-/// Saves the current height first so expand_window can restore it.
+/// Saves the current height first (in logical px) so expand_window can restore it.
 #[command]
-pub fn collapse_window(app: AppHandle, window: WebviewWindow) -> Result<(), String> {
-    let mut settings = store::load(&app);
-    let physical = window.outer_size().map_err(|e| e.to_string())?;
-    settings.window_height = physical.height;
-    store::save(&app, &settings)?;
-
+pub fn collapse_window(_app: AppHandle, window: WebviewWindow) -> Result<(), String> {
     let scale = window.scale_factor().map_err(|e| e.to_string())?;
+    let physical = window.outer_size().map_err(|e| e.to_string())?;
+
+    // Save current height as logical pixels to match Electron's stored units
+    let mut settings = store::load();
+    settings.window_bounds.height = (physical.height as f64 / scale) as u32;
+    store::save(&settings)?;
+
     window
         .set_size(tauri::Size::Logical(tauri::LogicalSize {
             width: physical.width as f64 / scale,
@@ -80,7 +62,6 @@ pub fn collapse_window(app: AppHandle, window: WebviewWindow) -> Result<(), Stri
 }
 
 /// Close the overlay window. Called from the renderer's close button.
-/// Using a Rust command avoids the need for JS window-close capabilities.
 #[command]
 pub fn close_window(window: WebviewWindow) -> Result<(), String> {
     window.close().map_err(|e| e.to_string())
@@ -88,43 +69,16 @@ pub fn close_window(window: WebviewWindow) -> Result<(), String> {
 
 /// Restore the overlay to its previous full height (saved by collapse_window).
 #[command]
-pub fn expand_window(app: AppHandle, window: WebviewWindow) -> Result<(), String> {
-    let settings = store::load(&app);
-    let current_size = window.outer_size().map_err(|e| e.to_string())?;
+pub fn expand_window(_app: AppHandle, window: WebviewWindow) -> Result<(), String> {
+    let scale = window.scale_factor().map_err(|e| e.to_string())?;
+    let settings = store::load();
+    let physical_width = window.outer_size().map_err(|e| e.to_string())?.width;
 
     window
-        .set_size(tauri::Size::Physical(tauri::PhysicalSize {
-            width: current_size.width,
-            height: settings.window_height,
+        .set_size(tauri::Size::Logical(tauri::LogicalSize {
+            width: physical_width as f64 / scale,
+            // window_bounds.height is stored in logical px
+            height: settings.window_bounds.height as f64,
         }))
         .map_err(|e| e.to_string())
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-/// Resolve the common/data directory that contains routes and JSON data.
-/// - In dev builds: uses CARGO_MANIFEST_DIR (embedded at compile time) to find
-///   the workspace root, then resolves common/data from there.
-/// - In release builds: expects data to be bundled alongside the binary.
-fn get_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
-    #[cfg(debug_assertions)]
-    {
-        let _ = app; // not needed in dev builds
-        let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
-        let workspace_root = manifest
-            .parent() // overlay-tauri/
-            .and_then(|p| p.parent()) // poeleveling-Github/
-            .ok_or("Could not resolve workspace root from CARGO_MANIFEST_DIR")?;
-        Ok(workspace_root.join("common").join("data"))
-    }
-
-    #[cfg(not(debug_assertions))]
-    {
-        // In production the route files are bundled as a resource named "common-data".
-        // See tauri.conf.json bundle.resources for where they're copied from.
-        app.path()
-            .resource_dir()
-            .map(|p: std::path::PathBuf| p.join("common-data"))
-            .map_err(|e: tauri::Error| e.to_string())
-    }
 }

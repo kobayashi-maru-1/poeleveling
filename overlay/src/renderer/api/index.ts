@@ -5,7 +5,6 @@ import type { Settings } from "../../shared/types";
 // Platform-agnostic API — implemented by both Electron and Tauri adapters.
 // The renderer only calls this interface; it never imports Electron or Tauri directly.
 export interface OverlayAPI {
-  getRouteSources(): Promise<string[]>;
   getSettings(): Promise<Settings>;
   setSettings(settings: Partial<Settings>): Promise<void>;
   collapseWindow(): Promise<void>;

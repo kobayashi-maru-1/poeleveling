@@ -7,9 +7,6 @@ import type { Settings } from "@shared/types";
 // Tauri implementation of OverlayAPI.
 // Each method maps to either a Rust command (via invoke) or a Tauri JS API.
 export const tauriAPI: OverlayAPI = {
-  // Reads act-1.txt through act-10.txt from the app's resource directory.
-  getRouteSources: () => invoke<string[]>("get_route_sources"),
-
   // Returns persisted settings (stored in the OS app-data folder).
   getSettings: () => invoke<Settings>("get_settings"),
 

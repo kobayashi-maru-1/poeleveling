@@ -16,18 +16,29 @@ export function SettingsPanel() {
 
   const characterNames = Object.keys(Characters).sort();
 
-  function update<K extends keyof Settings>(key: K, value: Settings[K]) {
-    setLocal((prev) => ({ ...prev, [key]: value }));
-    if (key === "pobCode") {
-      setPobError("");
-      setPobInfo("");
+  // Save a new settings object immediately, update local + global state,
+  // and reload the route if any route-affecting field changed.
+  async function saveSettings(next: Settings) {
+    setLocal(next);
+    await api.setSettings(next);
+    dispatch({ type: "SET_SETTINGS", settings: next });
+
+    const routeChanged =
+      next.leagueStart !== state.settings.leagueStart ||
+      next.library !== state.settings.library ||
+      next.bandit !== state.settings.bandit ||
+      next.characterClass !== state.settings.characterClass;
+
+    if (routeChanged) {
+      await reloadRoute(dispatch, next);
     }
   }
 
-  function importPob() {
+  async function importPob() {
     const code = local.pobCode.trim();
     if (!code) {
       dispatch({ type: "SET_POB", pobGemIds: null, buildTrees: null, gemLinkSets: null });
+      await saveSettings({ ...local, pobCode: "" });
       setPobError("");
       setPobInfo("PoB filter cleared");
       return;
@@ -40,14 +51,11 @@ export function SettingsPanel() {
       return;
     }
 
-    // Auto-fill class and bandit from PoB data
-    const newLocal = {
+    await saveSettings({
       ...local,
       characterClass: result.characterClass || local.characterClass,
       bandit: result.bandit,
-    };
-    setLocal(newLocal);
-
+    });
     dispatch({ type: "SET_POB", pobGemIds: new Set(result.gemIds), buildTrees: result.buildTrees, gemLinkSets: result.gemLinkSets });
     setPobError("");
     setPobInfo(
@@ -55,24 +63,6 @@ export function SettingsPanel() {
         (result.buildTrees.length ? ` · ${result.buildTrees.length} tree${result.buildTrees.length > 1 ? "s" : ""}` : "") +
         (result.characterClass ? ` · ${result.characterClass}` : "")
     );
-  }
-
-  async function applySettings() {
-    await api.setSettings(local);
-    dispatch({ type: "SET_SETTINGS", settings: local });
-
-    // Reload route if build config changed
-    const needsReload =
-      local.leagueStart !== state.settings.leagueStart ||
-      local.library !== state.settings.library ||
-      local.bandit !== state.settings.bandit ||
-      local.characterClass !== state.settings.characterClass;
-
-    if (needsReload) {
-      await reloadRoute(dispatch, api, local);
-    }
-
-    dispatch({ type: "TOGGLE_SETTINGS" });
   }
 
   return (
@@ -92,7 +82,11 @@ export function SettingsPanel() {
             className="settings-input"
             rows={2}
             value={local.pobCode}
-            onChange={(e) => update("pobCode", e.target.value)}
+            onChange={(e) => {
+              setLocal((prev) => ({ ...prev, pobCode: e.target.value }));
+              setPobError("");
+              setPobInfo("");
+            }}
             placeholder="Paste your PoB export code here…"
             style={{ flex: 1, resize: "vertical", fontFamily: "var(--font-mono)", fontSize: 10 }}
           />
@@ -104,11 +98,10 @@ export function SettingsPanel() {
               <button
                 className="settings-btn settings-reset-btn"
                 onClick={() => {
-                  update("pobCode", "");
                   dispatch({ type: "SET_POB", pobGemIds: null, buildTrees: null, gemLinkSets: null });
                   setPobInfo("");
                   setPobError("");
-                  api.setSettings({ ...local, pobCode: "" });
+                  void saveSettings({ ...local, pobCode: "" });
                 }}
               >
                 Clear
@@ -130,7 +123,7 @@ export function SettingsPanel() {
         <select
           className="settings-input"
           value={local.characterClass}
-          onChange={(e) => update("characterClass", e.target.value)}
+          onChange={(e) => void saveSettings({ ...local, characterClass: e.target.value })}
         >
           <option value="">— Select class —</option>
           {characterNames.map((name) => (
@@ -147,9 +140,7 @@ export function SettingsPanel() {
         <select
           className="settings-input"
           value={local.bandit}
-          onChange={(e) =>
-            update("bandit", e.target.value as Settings["bandit"])
-          }
+          onChange={(e) => void saveSettings({ ...local, bandit: e.target.value as Settings["bandit"] })}
         >
           <option value="None">Kill all (recommended)</option>
           <option value="Oak">Help Oak</option>
@@ -165,7 +156,7 @@ export function SettingsPanel() {
           id="leagueStart"
           className="settings-checkbox"
           checked={local.leagueStart}
-          onChange={(e) => update("leagueStart", e.target.checked)}
+          onChange={(e) => void saveSettings({ ...local, leagueStart: e.target.checked })}
         />
         <label className="settings-label" htmlFor="leagueStart">
           League start route
@@ -178,7 +169,7 @@ export function SettingsPanel() {
           id="library"
           className="settings-checkbox"
           checked={local.library}
-          onChange={(e) => update("library", e.target.checked)}
+          onChange={(e) => void saveSettings({ ...local, library: e.target.checked })}
         />
         <label className="settings-label" htmlFor="library">
           Library route
@@ -196,25 +187,16 @@ export function SettingsPanel() {
           max={1}
           step={0.05}
           value={local.opacity}
-          onChange={(e) => update("opacity", parseFloat(e.target.value))}
+          onChange={(e) => void saveSettings({ ...local, opacity: parseFloat(e.target.value) })}
           style={{ width: "100%", accentColor: "var(--accent)" }}
         />
       </div>
-
-      {/* ── Apply ── */}
-      <button
-        className="settings-btn settings-apply-btn"
-        onClick={applySettings}
-        style={{ width: "100%", padding: "6px" }}
-      >
-        Apply Settings
-      </button>
 
       {/* ── Reset progress ── */}
       <button
         className="settings-btn settings-reset-btn"
         onClick={() => dispatch({ type: "RESET_PROGRESS" })}
-        style={{ width: "100%", padding: "5px", marginTop: 6 }}
+        style={{ width: "100%", padding: "5px" }}
       >
         ↺ Reset Progress
       </button>

@@ -1,6 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import Store from "electron-store";
-import * as fs from "fs";
 import * as path from "path";
 
 // Must be set before app is ready so userData resolves to %APPDATA%\poeleveling
@@ -33,15 +32,6 @@ const HEADER_HEIGHT = 34; // px — collapsed window shows only the title bar
 
 let mainWindow: BrowserWindow | null = null;
 let expandedHeight: number | null = null; // saved before collapsing
-
-// Resolve path to common/data directory (dev vs packaged)
-function getCommonDataPath(): string {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, "common-data");
-  }
-  // In dev: __dirname is overlay/out/main/, go up 3 levels to monorepo root
-  return path.join(__dirname, "../../../common/data");
-}
 
 function createWindow(): void {
   const bounds = store.get("windowBounds");
@@ -96,32 +86,6 @@ function createWindow(): void {
 }
 
 // ─── IPC Handlers ────────────────────────────────────────────────────────────
-
-ipcMain.handle("get-route-sources", () => {
-  const routesDir = path.join(getCommonDataPath(), "routes");
-  const actFiles = [
-    "act-1.txt",
-    "act-2.txt",
-    "act-3.txt",
-    "act-4.txt",
-    "act-5.txt",
-    "act-6.txt",
-    "act-7.txt",
-    "act-8.txt",
-    "act-9.txt",
-    "act-10.txt",
-  ];
-
-  return actFiles.map((filename) => {
-    const filePath = path.join(routesDir, filename);
-    try {
-      return fs.readFileSync(filePath, "utf-8");
-    } catch {
-      console.error(`Failed to read route file: ${filePath}`);
-      return "";
-    }
-  });
-});
 
 ipcMain.handle("get-settings", () => {
   return {
